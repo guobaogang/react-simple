@@ -1,12 +1,69 @@
+import Component from "../react/component";
+
 const ReactDom = {
     render
 }
 
 function render(vnode, container) {
-    if (vnode == undefined) return;
+    container.appendChild(_render(vnode))
+}
+
+function createComponent(comp, props) {
+    let inst;
+    if (comp.prototype && comp.prototype.render) {
+        inst = new comp(props);
+    } else {
+        inst = new Component(props);
+        inst.constructor = comp;
+        inst.render = function () {
+            return this.constructor(props)
+        }
+    }
+    return inst;
+}
+
+function setComponentProps(comp, props) {
+    if (!comp.base) {
+        if (comp.componentWillMount) comp.componentWillMount();
+    } else {
+        if (comp.componentWillReceieveProps) comp.componentWillReceieveProps();
+    }
+    comp.props = props;
+    renderComponent(comp)
+}
+
+export function renderComponent(comp) {
+    const renderer = comp.render();
+    const base = _render(renderer);
+    if (comp.base && comp.componentWillUpdate) {
+        comp.componentWillUpdate();
+    }
+    if (comp.base) {
+        if (comp.componentDidUpdate) comp.componentDidUpdate();
+    } else {
+        if (comp.componentDidMount) comp.componentDidMount();
+    }
+    if (comp.base && comp.base.parentNode) {
+        comp.base.parentNode.replaceChild(base, comp.base)
+    }
+    comp.base = base;
+}
+
+function _render(vnode) {
+    if (vnode === undefined || vnode === null || typeof vnode === 'boolean') return;
+    if (typeof vnode === 'number') vnode = vnode.toString();
     if (typeof vnode === 'string') {
         const textNode = document.createTextNode(vnode);
-        return container.appendChild(textNode)
+        return textNode
+    }
+
+    if (typeof vnode.tag == 'function') {
+        //1.创建组件
+        const comp = createComponent(vnode.tag, vnode.attrs);
+        //2.设置组件属性
+        setComponentProps(comp, vnode.attrs)
+        //3.组件渲染的节点对象返回
+        return comp.base;
     }
 
     const { tag, attrs, children } = vnode;
@@ -20,7 +77,7 @@ function render(vnode, container) {
     if (children && children.length) {
         children.forEach(child => render(child, dom))
     }
-    container.appendChild(dom)
+    return dom
 }
 
 function setAttribute(dom, key, value) {
