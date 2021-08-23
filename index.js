@@ -42,9 +42,14 @@ class App extends React.Component {
     }
 
     handleClick() {
-        this.setState({
-            num: this.state.num + 1
-        })
+        for (let index = 0; index < 10; index++) {
+            this.setState((prevState) => {
+                return {
+                    num: prevState.num + 1
+                }
+            })
+        }
+
     }
 
     render() {

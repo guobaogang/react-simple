@@ -1,14 +1,16 @@
 import Component from "../react/component";
+import { diff, diffNode } from "./diff";
 
 const ReactDom = {
     render
 }
 
-function render(vnode, container) {
-    container.appendChild(_render(vnode))
+function render(vnode, container, dom) {
+    return diff(dom, vnode, container)
+    //container.appendChild(_render(vnode))
 }
 
-function createComponent(comp, props) {
+export function createComponent(comp, props) {
     let inst;
     if (comp.prototype && comp.prototype.render) {
         inst = new comp(props);
@@ -22,7 +24,7 @@ function createComponent(comp, props) {
     return inst;
 }
 
-function setComponentProps(comp, props) {
+export function setComponentProps(comp, props) {
     if (!comp.base) {
         if (comp.componentWillMount) comp.componentWillMount();
     } else {
@@ -33,20 +35,24 @@ function setComponentProps(comp, props) {
 }
 
 export function renderComponent(comp) {
+    let base;
     const renderer = comp.render();
-    const base = _render(renderer);
     if (comp.base && comp.componentWillUpdate) {
         comp.componentWillUpdate();
     }
+
+    base = diffNode(comp.base, renderer);
+    comp.base = base;
+
     if (comp.base) {
         if (comp.componentDidUpdate) comp.componentDidUpdate();
     } else {
         if (comp.componentDidMount) comp.componentDidMount();
     }
-    if (comp.base && comp.base.parentNode) {
+    /* if (comp.base && comp.base.parentNode) {
         comp.base.parentNode.replaceChild(base, comp.base)
     }
-    comp.base = base;
+    comp.base = base; */
 }
 
 function _render(vnode) {
@@ -80,7 +86,7 @@ function _render(vnode) {
     return dom
 }
 
-function setAttribute(dom, key, value) {
+export function setAttribute(dom, key, value) {
     if (key === 'className') {
         key = 'class';
     }
